@@ -1,4 +1,4 @@
-#!/Users/mikhaildergachyov/Documents/Projects/Lexx/risk/risk_updater/venv/bin/python3
+#!/Users/mikhaildergachyov/Documents/Projects/Lexx/risk/risk_updater/venv/bin/python3.10
 # -*- coding: utf-8 -*-
 import re
 import sys

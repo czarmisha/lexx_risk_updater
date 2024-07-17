@@ -1,5 +1,5 @@
 import requests
-from settings import config
+from settings.config import config
 from models.api import UpdateAccount
 
 

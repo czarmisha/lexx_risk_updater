@@ -1,2 +1,2 @@
 from .takion import *
-from .docs import *
+from .gdocs import *
