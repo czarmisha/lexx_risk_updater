@@ -5,6 +5,7 @@ import schedule
 
 from models.api import UpdateAccount
 from sdk import DocsAPIClient, TakionAPIClient
+from sdk.telegram import telegram
 
 
 def main(number: int = 1):
@@ -12,29 +13,33 @@ def main(number: int = 1):
     docs_api = DocsAPIClient()
     api_client = TakionAPIClient()
 
-    accounts = api_client.get_accounts()  # TODO: Try except
+    accounts = api_client.get_accounts()
     if not accounts:
-        print("No accounts found in the API")
-        # TODO: Send to telegram
+        message = "No accounts fetched from the Takion API"
+        print(message)
+        telegram.send_message(message)
         return
 
     sheet_data = docs_api.get_google_sheet_data()
     if not sheet_data:
-        print("No data found in the sheet")
-        # TODO: Send to telegram
+        message = "No data fetched from the Google Sheet"
+        print(message)
+        telegram.send_message(message)
         return
 
     for row in sheet_data:
         user_id = row.get("Account")
         if not user_id:
-            print("No Account found in the row")
-            # TODO: Send to telegram
+            message = "No Account found in the Google Sheet row"
+            print(message)
+            telegram.send_message(message)
             continue
 
         account = api_client.get_account(accounts, user_id)
         if not account:
-            print(f"Account with user_id {user_id} not found in the data from API")
-            # TODO: Send to telegram
+            message = f"Account with user_id {user_id} not found in the data from Takion API"
+            print(message)
+            telegram.send_message(message)
             continue
 
         new_constraints = {
@@ -46,15 +51,18 @@ def main(number: int = 1):
 
         for constraint, value in new_constraints.items():
             if value is None:
-                print(f"Invalid value for {constraint} in the row")
-                # TODO: Send to telegram
+                message = f"Invalid value for {constraint} in the row"
+                print(message)
+                telegram.send_message(message)
                 continue
             if value == account.get(constraint):  # TODO: check types
-                print(f"Value for {constraint} is already set to {value}")
+                message = f"Value for {constraint} is already set to {value}"
+                print(message)
                 del new_constraints[constraint]
 
         data = UpdateAccount(**new_constraints)
         api_client.update_account(account.get("user_id"), data)
+
         print(f"Account with user_id {user_id} updated successfully")
 
 
@@ -66,4 +74,3 @@ if __name__ == "__main__":
     while True:
         schedule.run_pending()
         time.sleep(1)
-    # main()

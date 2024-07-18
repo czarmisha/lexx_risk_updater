@@ -36,10 +36,6 @@ class TakionAPIClient:
         return None
 
 
-#     user_id: int = my_dict['user']["id"]
-#     new_constraints: dict = {"max_loss_close": 4300}
-
-
 # example of account data
 # {
 #     "id":2108,

@@ -4,7 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Config(BaseSettings):
-    model_config = SettingsConfigDict(env_file='settings/.env', env_file_encoding='utf-8')
+    model_config = SettingsConfigDict(env_file="settings/.env", env_file_encoding="utf-8")
 
     ROOT_DIR: str = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -13,8 +13,12 @@ class Config(BaseSettings):
     API_TOKEN: str = "your_token_here"
 
     # google sheets
-    CREDS_FILE_PATH: str = 'path to your creds file'
-    SPREADSHEET_ID: str = 'spreadsheet_id_here'
+    CREDS_FILE_PATH: str = "path to your creds file"
+    SPREADSHEET_ID: str = "spreadsheet_id_here"
+
+    # telegram
+    TELEGRAM_TOKEN: str = "telegram_token_here"
+    TELEGRAM_CHAT_ID: str = "telegram_chat_id_here"
 
     @property
     def creds_file(self):
