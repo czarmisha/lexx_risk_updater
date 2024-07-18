@@ -11,5 +11,5 @@ class DocsAPIClient:
         client = gspread.service_account(self.creds_file)
         sheet = client.open_by_key(self.spreadsheet_id).sheet1
         data = sheet.get_all_records()
-        print(data)
+        print(data, "\n")
         return data
