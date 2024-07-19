@@ -2,9 +2,6 @@ from pydantic import BaseModel
 
 
 class UpdateAccount(BaseModel):
-    name: str
-    age: int
-    email: str
-    password: str
-    address: str
-    phone: str
+    max_loss: int | None = None
+    max_loss_close: int | None = None
+    buying_power: int | None = None
