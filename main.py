@@ -2,13 +2,15 @@ import time
 from datetime import datetime as dt
 
 import schedule
+from pydantic import ValidationError
 
 from models.api import UpdateAccount
 from sdk import DocsAPIClient, TakionAPIClient
 from sdk.telegram import telegram
 
 
-def main(number: int = 1):
+def main(number: int = 0):
+    column_postfix = number + 1 if number == 0 else number
     message = f"Running updates for the {number} time at {dt.now().strftime('%Y-%m-%d %H:%M:%S')}"
     print(message)
     telegram.send_message(message)
@@ -28,16 +30,10 @@ def main(number: int = 1):
         print(message)
         telegram.send_message(message)
         return
+    sheet_data = list(filter(lambda x: x.get("Account"), sheet_data))
 
-    for row in sheet_data[:2]:
+    for row in sheet_data:
         user_id = row.get("Account")
-
-        if not user_id:
-            message = "No Account found in the Google Sheet row"
-            print(message)
-            telegram.send_message(message)
-            continue
-
         user_id = str(user_id) if isinstance(user_id, int) else user_id
 
         account = api_client.get_account(accounts, user_id)
@@ -49,16 +45,19 @@ def main(number: int = 1):
 
         new_constraints = {
             "max_loss": row.get(f"max_loss_{number}"),
-            "max_loss_close": row.get(f"max_loss_close_{number}"),
-            "buying_power": row.get(f"buying_power_{number}"),
+            "max_loss_close": row.get(f"max_loss_close_{column_postfix}"),
+            "buying_power": row.get(f"buying_power_{column_postfix}"),
         }
 
         to_delete = []
         for constraint, value in new_constraints.items():
-            if value is None:
+            if number == 0 and constraint == "max_loss" and value == 0:
+                new_constraints["max_loss"] = row.get(f"max_loss_{number+1}")
+                value = row.get(f"max_loss_{number+1}")
+            if value is None or value == "#N/A" or value == "":
                 message = f"Invalid value for {constraint} in the row"
                 print(message)
-                telegram.send_message(message)
+                to_delete.append(constraint)
                 continue
             if value == account.get(constraint):
                 message = f"Value for {constraint} is already set to {value}"
@@ -68,7 +67,17 @@ def main(number: int = 1):
         for constraint in to_delete:
             del new_constraints[constraint]
 
-        data = UpdateAccount(**new_constraints)
+        try:
+            data = UpdateAccount(**new_constraints)
+            if not data.model_dump(exclude_none=True):
+                message = f"Nothing to update for account {user_id}"
+                print(message)
+                continue
+        except ValidationError as e:
+            message = f"Error occurred: typing is wrong for account {user_id} {str(e)}"
+            print(message)
+            telegram.send_message(message)
+            continue
         api_client.update_account(data, account.get("user", {}).get("id"))
 
         print(f"Account with user_id {user_id} updated successfully")
@@ -76,14 +85,15 @@ def main(number: int = 1):
 
 if __name__ == "__main__":
     try:
-        main()
-        # schedule.every().day.at("12:22", "America/New_York").do(main, number=1)
-        # schedule.every().day.at("12:23", "America/New_York").do(main, number=2)
-        # schedule.every().day.at("12:24", "America/New_York").do(main, number=3)
+        # main()
+        # TODO every day but not in holidays
+        schedule.every().day.at("07:00", "America/New_York").do(main, number=0)
+        schedule.every().day.at("12:23", "America/New_York").do(main, number=1)
+        schedule.every().day.at("12:24", "America/New_York").do(main, number=2)
 
-        # while True:
-        #     schedule.run_pending()
-        #     time.sleep(1)
+        while True:
+            schedule.run_pending()
+            time.sleep(1)
     except Exception as e:
         message = f"Error occurred: {str(e)}"
         print(message)
