@@ -14,15 +14,15 @@ class TakionAPIClient:
             "Content-Type": "application/json",
         }
 
-    def update_account(self, data: UpdateAccount, user_id: int | None = None):
+    def update_account(self, data: UpdateAccount, user_id: int | None = None, account_id: str | None = None):
         if not user_id:
             raise Exception("user_id is required")
-        print("Updating account", user_id, data.model_dump(exclude_none=True))
+        print("Updating account", account_id, data.model_dump(exclude_none=True))
         url = f"{self.base_url}{user_id}/"
         headers = self.get_headers()
         response = requests.patch(url, json=data.model_dump(exclude_none=True), headers=headers)
         if response.status_code != 200:
-            raise Exception(f"{user_id} : {response.json()}")
+            raise Exception(f"{account_id} : {response.json()}")
         return response.json()
 
     def get_accounts(self):

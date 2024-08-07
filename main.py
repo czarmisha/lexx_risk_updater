@@ -7,11 +7,11 @@ from pydantic import ValidationError
 from models.api import UpdateAccount
 from sdk import DocsAPIClient, TakionAPIClient
 from sdk.telegram import telegram
+from utils.constraints import get_constraints
 
 
-def main(number: int = 0):
-    column_postfix = number + 1 if number == 0 else number
-    message = f"Running updates for the {number} time at {dt.now().strftime('%Y-%m-%d %H:%M:%S')}"
+def main(number: int = 1):
+    message = f"Running updates #{number} at {dt.now().strftime('%Y-%m-%d %H:%M:%S')}"
     print(message)
     telegram.send_message(message)
     docs_api = DocsAPIClient()
@@ -43,17 +43,20 @@ def main(number: int = 0):
             telegram.send_message(message)
             continue
 
-        new_constraints = {
-            "max_loss": row.get(f"max_loss_{number}"),
-            "max_loss_close": row.get(f"max_loss_close_{column_postfix}"),
-            "buying_power": row.get(f"buying_power_{column_postfix}"),
-        }
+        columns_to_update = get_constraints(number)
+        if not columns_to_update:
+            message = "no columns to update"
+            print(message)
+            telegram.send_message(message)
+            continue
+
+        new_constraints = {key: row.get(f"{key}_{number}") for key in columns_to_update}
 
         to_delete = []
         for constraint, value in new_constraints.items():
-            if number == 0 and constraint == "max_loss" and value == 0:
-                new_constraints["max_loss"] = row.get(f"max_loss_{number+1}")
-                value = row.get(f"max_loss_{number+1}")
+            if number == 1 and constraint == "max_loss" and value == 0:
+                new_constraints["max_loss"] = row.get("max_loss_0")
+                value = row.get("max_loss_0")
             if value is None or value == "#N/A" or value == "":
                 message = f"Invalid value for {constraint} in the row"
                 print(message)
@@ -78,18 +81,18 @@ def main(number: int = 0):
             print(message)
             telegram.send_message(message)
             continue
-        api_client.update_account(data, account.get("user", {}).get("id"))
+        api_client.update_account(data, account.get("user", {}).get("id"), user_id)
 
         print(f"Account with user_id {user_id} updated successfully")
 
 
 if __name__ == "__main__":
     try:
-        # main()
+        # main(3)
         # TODO every day but not in holidays
-        schedule.every().day.at("07:00", "America/New_York").do(main, number=0)
-        schedule.every().day.at("12:23", "America/New_York").do(main, number=1)
-        schedule.every().day.at("12:24", "America/New_York").do(main, number=2)
+        schedule.every().day.at("07:00", "America/New_York").do(main, number=1)
+        schedule.every().day.at("15:00", "America/New_York").do(main, number=2)
+        schedule.every().day.at("16:20", "America/New_York").do(main, number=3)
 
         while True:
             schedule.run_pending()
